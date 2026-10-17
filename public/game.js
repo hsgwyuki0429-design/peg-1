@@ -6,8 +6,8 @@
   const S = window.Sound;
   const { SIZE } = L;
 
-  const SAVE_KEY = 'pegblock-save-v1';
-  const BEST_KEY = 'pegblock-best';
+  const SAVE_KEY = 'pegblock-save-v2';
+  const BEST_KEY = 'pegblock-best-v2';
   const MOVE_MS = 200;
   const SPAWN_STAGGER = 45;
   const COMBO_WINDOW = 2500;
@@ -68,7 +68,7 @@
   function colorOf(v) {
     if (colorCache.has(v)) return colorCache.get(v);
     const probe = document.createElement('div');
-    probe.className = 'tile' + (v > 2048 ? ' big' : '');
+    probe.className = 'tile';
     probe.dataset.v = v;
     probe.style.display = 'none';
     boardEl.appendChild(probe);
@@ -80,10 +80,6 @@
 
   function setTileValue(t, v) {
     t.dataset.v = v;
-    t.classList.toggle('big', v > 2048);
-    const digits = String(v).length;
-    t.style.setProperty('--k', digits <= 1 ? 0.46 : digits === 2 ? 0.4 : digits === 3 ? 0.31 : 0.24);
-    t.firstChild.textContent = v;
   }
 
   function placeTile(t, i) {
@@ -137,7 +133,7 @@
     dests = i >= 0 ? L.movesFrom(state.board, i) : [];
     if (i >= 0) {
       tileEls[i].classList.add('selected');
-      const col = colorOf(state.board[i] * 2);
+      const col = colorOf(state.board[i]);
       for (const m of dests) {
         cellEls[m.to].classList.add('dest');
         cellEls[m.to].style.setProperty('--dest', col);
@@ -165,7 +161,7 @@
     const mover = tileEls[move.from];
     tileEls[move.from] = null;
     tileEls[move.to] = mover;
-    mover.classList.remove('merged', 'shake');
+    mover.classList.remove('landed', 'shake');
     retrigger(mover, 'moving');
     placeTile(mover, move.to);
 
@@ -177,20 +173,19 @@
       setTimeout(() => victim.remove(), 220);
     }
 
-    S.merge(Math.log2(res.merged), combo);
+    S.jump(combo);
     if (navigator.vibrate && !S.muted) navigator.vibrate(12);
 
     const tr = Math.floor(move.to / SIZE), tc = move.to % SIZE;
     setTimeout(() => {
       mover.classList.remove('moving');
-      setTileValue(mover, res.merged);
-      retrigger(mover, 'merged');
-      popup(`+${res.gained}`, tr, tc, colorOf(res.merged));
+      retrigger(mover, 'landed');
+      popup(`+${res.gained}`, tr, tc, colorOf(state.board[move.to]));
     }, MOVE_MS - 30);
 
     lockedUntil = now + MOVE_MS;
 
-    // 補充：合体のあとにブロックが順に湧いてくる
+    // 補充：ジャンプのあとにブロックが順に湧いてくる
     if (res.refilled.length) {
       lockedUntil = now + MOVE_MS + 80;
       setTimeout(() => {
@@ -206,7 +201,7 @@
           const cs = ref.cells.map((i) => [Math.floor(i / SIZE), i % SIZE]);
           const mr = cs.reduce((a, x) => a + x[0], 0) / cs.length;
           const mc = cs.reduce((a, x) => a + x[1], 0) / cs.length;
-          popup(`補充 ${ref.value}`, mr, mc, colorOf(ref.value), true);
+          popup('補充！', mr, mc, colorOf(ref.value), true);
         }
         S.refill(k, SPAWN_STAGGER);
         updateArms();
@@ -292,12 +287,8 @@
   function updateHud(bump) {
     setText('score', state.score, bump);
     setText('best', best, false);
-    setText('moves', state.moves, false);
+    setText('left', L.CELLS.filter((i) => state.board[i]).length, false);
     setText('refills', state.refills, bump);
-    const next = L.refillValue(state.board);
-    const chip = el('next-refill');
-    chip.textContent = next;
-    chip.style.background = colorOf(next);
     el('btn-undo').disabled = history.length === 0;
     updateArms();
   }
@@ -318,9 +309,8 @@
     if (isBest) S.best();
     el('best-badge').hidden = !isBest;
     el('r-score').textContent = state.score;
-    el('r-moves').textContent = state.moves;
+    el('r-left').textContent = L.CELLS.filter((i) => state.board[i]).length;
     el('r-refills').textContent = state.refills;
-    el('r-max').textContent = state.maxTile;
     el('r-undos').textContent = undos;
     el('over-undo').disabled = history.length === 0;
     updateHud(false);

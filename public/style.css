@@ -114,18 +114,6 @@ body {
 
 @keyframes bump { 40% { transform: scale(1.3); } }
 
-.next { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 800; }
-.next-note { font-size: 11px; font-weight: 500; color: var(--ink-soft); }
-.chip {
-  min-width: 34px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  text-align: center;
-  color: #fff;
-  background: #ff3d77;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
-}
-
 /* ---------- 盤 ---------- */
 .board-area {
   flex: 1;
@@ -220,7 +208,7 @@ body {
   box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.18), 0 0 0 4px #fff, 0 0 0 7px var(--hi), 0 10px 18px rgba(40, 10, 90, 0.35);
 }
 .tile.moving .face { animation: hop 0.2s ease-out; }
-.tile.merged .face { animation: pop 0.28s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.tile.landed .face { animation: pop 0.28s cubic-bezier(0.3, 1.6, 0.5, 1); }
 .tile.vanish .face { animation: vanish 0.2s ease-in forwards; }
 .tile.spawn .face { animation: spawn 0.38s cubic-bezier(0.3, 1.5, 0.5, 1) backwards; animation-delay: var(--delay, 0ms); }
 .tile.shake .face { animation: shake 0.3s ease; }
@@ -236,20 +224,12 @@ body {
   80% { transform: translateX(3%); }
 }
 
-/* 数字ごとの色 */
-.tile[data-v='2'] { --hi: #ff7aa2; --lo: #ff2d6f; }
-.tile[data-v='4'] { --hi: #ffb347; --lo: #ff7a00; }
-.tile[data-v='8'] { --hi: #ffe45c; --lo: #ffb800; }
-.tile[data-v='8'] .face { color: #7a3d00; text-shadow: 0 2px 0 rgba(255, 255, 255, 0.4); }
-.tile[data-v='16'] { --hi: #6ee77a; --lo: #16b84a; }
-.tile[data-v='32'] { --hi: #4fe3e0; --lo: #00a7c2; }
-.tile[data-v='64'] { --hi: #5cb8ff; --lo: #1f6bff; }
-.tile[data-v='128'] { --hi: #a98bff; --lo: #6a32ff; }
-.tile[data-v='256'] { --hi: #f08bff; --lo: #c21fe0; }
-.tile[data-v='512'] { --hi: #ff8fd0; --lo: #ff1f8e; }
-.tile[data-v='1024'] { --hi: #ff9a7a; --lo: #f0341a; }
-.tile[data-v='2048'] { --hi: #fff27a; --lo: #ff9d00; }
-.tile.big { --hi: #6b6bff; --lo: #2a1b8c; }
+/* ペグの色（出身の区画ごと） */
+.tile[data-v='1'] { --hi: #c4a3ff; --lo: #7b4dff; }
+.tile[data-v='2'] { --hi: #5ff0b0; --lo: #12b76a; }
+.tile[data-v='3'] { --hi: #ffb347; --lo: #ff6a00; }
+.tile[data-v='4'] { --hi: #5cc8ff; --lo: #1f6bff; }
+.tile[data-v='5'] { --hi: #ffe45c; --lo: #ffb000; }
 
 .popup {
   position: absolute;
