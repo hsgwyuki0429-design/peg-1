@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>ペグブロック</title>
-  <meta name="description" content="玉を飛び越えて取っていく、十字盤のパズルゲーム。">
+  <meta name="description" content="同じ数字の玉を飛び越えて合体させる、十字盤のパズルゲーム。">
   <meta name="theme-color" content="#487af0">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -60,6 +60,7 @@
       <div class="sub-stats">
         <span>残り <b id="left">0</b></span>
         <span>補充 <b id="refills">0</b></span>
+        <span>次の補充<span class="chip" id="next-refill">2</span></span>
       </div>
     </div>
 
@@ -88,6 +89,7 @@
       <p class="over-best" id="best-badge" hidden>ベストスコア更新！</p>
       <div class="over-stats">
         <div class="stat"><span class="stat-label">残りの玉</span><span class="stat-val" id="r-left">0</span></div>
+        <div class="stat"><span class="stat-label">最大の数字</span><span class="stat-val" id="r-max">0</span></div>
         <div class="stat"><span class="stat-label">補充</span><span class="stat-val" id="r-refills">0</span></div>
       </div>
       <div class="over-actions">
@@ -100,9 +102,10 @@
     <div class="overlay-box rules-box" tabindex="-1" autofocus>
       <p class="over-title">あそびかた</p>
       <ol class="rules">
-        <li>玉を<b>スワイプ</b>すると、その方向に隣り合う玉を1つ飛び越えて、先の空きマスへ移動します。タップで選んでから移動先をタップしてもOK。</li>
-        <li>飛び越えた玉は盤から取られて<b>1点</b>。斜めには動けません。</li>
+        <li>玉を<b>スワイプ</b>すると、その方向に隣り合う<b>同じ数字</b>の玉を飛び越えて、先の空きマスへ移動します。タップで選んでから移動先をタップしてもOK。斜めには動けません。</li>
+        <li>飛び越えた玉は取られ、動かした玉の数字は<b>2倍</b>に。できた数字がそのまま得点です。</li>
         <li>四方の腕（2×3）の玉が<b>全部なくなる</b>と、その腕の6マスに玉がまるごと補充されます。腕の外の数字は、その腕に残っている玉の数です。中央は補充されません。</li>
+        <li>補充される数字は、<b>そのとき盤上にあるいちばん小さい数字</b>。2が無くなれば4、4も無くなれば8…と上がっていきます。</li>
         <li>どの玉も動かせなくなったら終了です。</li>
       </ol>
       <button class="primary gold" id="rules-close" type="button">はじめる</button>

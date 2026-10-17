@@ -32,30 +32,26 @@
     }
   }
 
-  // ペグの色番号（出身の区画で決まる。動かしても変わらない）
-  const COLOR = { center: 1, top: 2, right: 3, bottom: 4, left: 5 };
-
   function newGame() {
     const board = new Array(SIZE * SIZE).fill(0);
-    for (const i of CELLS) {
-      board[i] = i === CENTER ? 0 : COLOR[regionOf(Math.floor(i / SIZE), i % SIZE)];
-    }
-    return { board, score: 0, moves: 0, refills: 0 };
+    for (const i of CELLS) board[i] = i === CENTER ? 0 : 2;
+    return { board, score: 0, moves: 0, refills: 0, maxTile: 2 };
   }
 
   function cloneState(s) {
-    return { board: s.board.slice(), score: s.score, moves: s.moves, refills: s.refills };
+    return { board: s.board.slice(), score: s.score, moves: s.moves, refills: s.refills, maxTile: s.maxTile };
   }
 
   function movesFrom(board, from) {
-    if (!board[from]) return [];
+    const v = board[from];
+    if (!v) return [];
     const r = Math.floor(from / SIZE), c = from % SIZE;
     const out = [];
     for (const [dr, dc] of DIRS) {
       const r1 = r + dr, c1 = c + dc, r2 = r + 2 * dr, c2 = c + 2 * dc;
       if (!isCell(r2, c2)) continue;
       const over = r1 * SIZE + c1, to = r2 * SIZE + c2;
-      if (board[over] && !board[to]) out.push({ from, over, to });
+      if (board[over] === v && board[to] === 0) out.push({ from, over, to });
     }
     return out;
   }
@@ -66,27 +62,40 @@
     return out;
   }
 
+  // 補充される数字：盤上にある一番小さい数字（2が無ければ4、4も無ければ8…）
+  function refillValue(board) {
+    let min = Infinity;
+    for (const i of CELLS) if (board[i] && board[i] < min) min = board[i];
+    return min === Infinity ? 2 : min;
+  }
+
   // 1手を適用して新しい状態を返す。元の状態は変更しない。
   function applyMove(state, move) {
     const s = cloneState(state);
-    s.board[move.to] = s.board[move.from];
+    const v = s.board[move.from];
+    const merged = v * 2;
     s.board[move.from] = 0;
-    s.board[move.over] = 0; // 飛び越えたペグを取る
-    s.score += 1;
+    s.board[move.over] = 0;
+    s.board[move.to] = merged;
+    s.score += merged;
     s.moves += 1;
+    if (merged > s.maxTile) s.maxTile = merged;
 
-    // 四方の腕が空になったら、その腕の6マスを一斉に補充する
+    // 合体と得点のあとに補充。同時に空いた区画はすべて同じ数字で埋める。
+    const emptied = Object.keys(ARMS).filter((k) => ARMS[k].every((i) => s.board[i] === 0));
     const refilled = [];
-    for (const arm of Object.keys(ARMS)) {
-      if (!ARMS[arm].every((i) => s.board[i] === 0)) continue;
-      for (const i of ARMS[arm]) s.board[i] = COLOR[arm];
-      refilled.push({ arm, cells: ARMS[arm].slice(), value: COLOR[arm] });
-      s.refills += 1;
+    if (emptied.length) {
+      const value = refillValue(s.board);
+      for (const arm of emptied) {
+        for (const i of ARMS[arm]) s.board[i] = value;
+        refilled.push({ arm, cells: ARMS[arm].slice(), value });
+        s.refills += 1;
+      }
     }
-    return { state: s, gained: 1, refilled };
+    return { state: s, merged, gained: merged, refilled };
   }
 
-  const PegLogic = { SIZE, CENTER, CELLS, ARMS, isCell, regionOf, COLOR, newGame, cloneState, movesFrom, legalMoves, applyMove };
+  const PegLogic = { SIZE, CENTER, CELLS, ARMS, isCell, regionOf, newGame, cloneState, movesFrom, legalMoves, refillValue, applyMove };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = PegLogic;
   else root.PegLogic = PegLogic;

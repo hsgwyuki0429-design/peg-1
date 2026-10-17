@@ -1,8 +1,8 @@
-// ペグブロックの描画と操作（上から見た盤・スワイプ操作・玉の動き）
+// ペグブロックの描画と操作（上から見た盤・スワイプ操作・数字の玉の動き）
 //
 // 玉は本物のビー玉のように動かす。位置はマス単位（マスの中心が整数 + 0.5）、高さ z もマス単位。
 // - 跳ぶ: 重力の放物線で飛び（水平は等速）、着地で反発係数ぶんだけ小さく何度か弾んでから、穴の中で揺れて止まる
-// - 取られる: 指でつまみ上げるように持ち上がって消える
+// - 取られる: 指でつまみ上げるように持ち上がって消え、着地した玉の数字が2倍になる
 // - 補充: 上から落ちてきて弾み、穴に収まる
 // 上から見た盤なので、高さは「少し大きく・少し上に・影が離れて薄くなる」で表す（光は左上から）。
 (function () {
@@ -12,8 +12,8 @@
   const S = window.Sound;
   const { SIZE } = L;
 
-  const SAVE_KEY = 'pegblock-save-v3';
-  const BEST_KEY = 'pegblock-best-v2';
+  const SAVE_KEY = 'pegblock-save-v4';
+  const BEST_KEY = 'pegblock-best-v3';
   const COMBO_WINDOW = 2500;
   const DIRS = { up: [-1, 0], down: [1, 0], left: [0, -1], right: [0, 1] };
 
@@ -82,19 +82,22 @@
     cellEls[i] = d;
   }
 
+  // 数字の色（CSS の .marble[data-c] から読む）: col = 玉の色、ink = 数字の色
   const colorCache = new Map();
-  function colorOf(v) {
+  function paletteOf(v) {
     if (colorCache.has(v)) return colorCache.get(v);
     const probe = document.createElement('div');
     probe.className = 'marble';
-    probe.dataset.v = v;
+    setBallValue({ root: probe, label: document.createElement('span') }, v);
     probe.style.display = 'none';
     boardEl.appendChild(probe);
-    const col = getComputedStyle(probe).getPropertyValue('--col').trim() || '#ffffff';
+    const cs = getComputedStyle(probe);
+    const pal = { col: cs.getPropertyValue('--col').trim() || '#ffffff', ink: cs.getPropertyValue('--ink').trim() || '#ffffff' };
     probe.remove();
-    colorCache.set(v, col);
-    return col;
+    colorCache.set(v, pal);
+    return pal;
   }
+  const colorOf = (v) => paletteOf(v).col;
 
   // ---------- 玉 ----------
   const balls = new Array(SIZE * SIZE).fill(null); // マス -> 玉
@@ -106,18 +109,21 @@
   function makeBall(i, v) {
     const root = document.createElement('div');
     root.className = 'marble';
-    root.dataset.v = v;
     const shadow = document.createElement('div');
     shadow.className = 'm-shadow';
     const body = document.createElement('div');
     body.className = 'm-body';
     const tex = document.createElement('div');
     tex.className = 'm-tex';
-    body.appendChild(tex);
+    const label = document.createElement('span');
+    label.className = 'm-label';
+    body.append(tex, label);
     root.append(shadow, body);
     boardEl.appendChild(root);
     const b = {
-      root, shadow, body, tex,
+      root, shadow, body, tex, label,
+      pop: 0,                   // 合体した瞬間にふくらむ量（ばねのように戻る）
+      popAt: 0,
       x: colOf(i) + 0.5, y: rowOf(i) + 0.5, z: 0, alpha: 1,
       ox: 0, oy: 0,             // 穴の中での揺れ・押し込みのずれ
       roll: [0, 0],             // 転がった量（模様をずらして回転に見せる）
@@ -125,8 +131,19 @@
       push: [0, 0], pushTarget: [0, 0],
       motion: null,
     };
+    setBallValue(b, v);
     balls[i] = b;
     return b;
+  }
+
+  // 数字と色。128 より大きい数字は色を巡回させる（CSS の data-c）
+  function setBallValue(b, v) {
+    const lvl = Math.round(Math.log2(v));
+    b.root.dataset.v = v;
+    b.root.dataset.c = ((lvl - 1) % 10) + 1;
+    b.label.textContent = v;
+    const digits = String(v).length;
+    b.root.style.setProperty('--k', digits <= 1 ? 0.5 : digits === 2 ? 0.42 : digits === 3 ? 0.33 : 0.26);
   }
 
   function clearBalls() {
@@ -223,10 +240,12 @@
       const x = b.x + b.ox + b.push[0];
       const y = b.y + b.oy + b.push[1];
       const zc = Math.min(z, 2.5);
+      const pt = now - b.popAt;
+      const pop = b.pop && pt < 600 ? b.pop * Math.exp(-pt / 110) * Math.cos(pt / 48) : 0;
       b.root.style.transform = `translate(${(x - 0.5) * cellPx}px, ${(y - 0.5) * cellPx}px)`;
       b.root.style.zIndex = z > 0.03 ? 6 : 3;
       b.root.style.opacity = b.alpha;
-      b.body.style.transform = `translate(0, ${-z * 0.16 * cellPx}px) scale(${1 + zc * 0.26})`;
+      b.body.style.transform = `translate(0, ${-z * 0.16 * cellPx}px) scale(${(1 + zc * 0.26) * (1 + pop)})`;
       b.shadow.style.transform = `translate(${(0.05 + z * 0.2) * cellPx}px, ${(0.07 + z * 0.28) * cellPx}px) scale(${1 - zc * 0.16})`;
       b.shadow.style.opacity = Math.max(0, 1 - zc * 0.32);
       // 模様は転がった向きへ流す（1周 = 円周 π マスぶんで一巡）
@@ -255,7 +274,7 @@
     dests = i >= 0 ? L.movesFrom(state.board, i) : [];
     if (i >= 0) {
       balls[i].holdTarget = 0.22; // 指でつまみ上げる
-      const col = colorOf(state.board[i]);
+      const col = colorOf(state.board[i] * 2);
       for (const m of dests) {
         cellEls[m.to].classList.add('dest');
         cellEls[m.to].style.setProperty('--dest', col);
@@ -338,13 +357,19 @@
     }
 
     // 音は当たった瞬間に合わせる: 着地の「とん」＋ベル、そのあとの小さな弾み
-    setTimeout(() => S.jump(combo), FLIGHT_MS);
+    setTimeout(() => {
+      // 着地した瞬間に数字が2倍になり、玉がふくらんで戻る
+      setBallValue(mover, res.merged);
+      mover.pop = 0.24;
+      mover.popAt = performance.now();
+      S.merge(Math.log2(res.merged), combo);
+    }, FLIGHT_MS);
     for (const s of track.segs) {
       setTimeout(() => S.tick(s.v / vz), FLIGHT_MS + s.t + s.d);
     }
     setTimeout(() => {
       if (navigator.vibrate && !S.muted) navigator.vibrate(12);
-      popup(`+${res.gained}`, rowOf(move.to), colOf(move.to), colorOf(state.board[move.to]));
+      popup(`+${res.gained}`, rowOf(move.to), colOf(move.to), colorOf(res.merged));
     }, FLIGHT_MS);
 
     lockedUntil = now + FLIGHT_MS + 40;
@@ -361,7 +386,7 @@
           const cs = ref.cells.map((i) => [rowOf(i), colOf(i)]);
           const mr = cs.reduce((a, x) => a + x[0], 0) / cs.length;
           const mc = cs.reduce((a, x) => a + x[1], 0) / cs.length;
-          popup('補充！', mr, mc, colorOf(ref.value), true);
+          popup(`補充 ${ref.value}`, mr, mc, colorOf(ref.value), true);
         }
         const fall = Math.sqrt((2 * DROP_Z) / G);
         setTimeout(() => S.refill(k, DROP_STAGGER), Math.max(0, fall - 50));
@@ -469,6 +494,11 @@
     setText('best', best, false);
     setText('left', L.CELLS.filter((i) => state.board[i]).length, false);
     setText('refills', state.refills, bump);
+    const next = L.refillValue(state.board);
+    const chip = el('next-refill');
+    chip.textContent = next;
+    chip.style.background = paletteOf(next).col;
+    chip.style.color = paletteOf(next).ink;
     updateArms();
   }
 
@@ -491,6 +521,7 @@
     el('r-score').textContent = state.score;
     el('r-left').textContent = L.CELLS.filter((i) => state.board[i]).length;
     el('r-refills').textContent = state.refills;
+    el('r-max').textContent = state.maxTile;
     updateHud(false);
     openDialog(el('dlg-over'));
   }
