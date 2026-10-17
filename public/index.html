@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ペグブロック</title>
+  <meta name="description" content="同じ数字のペグを飛び越えて合体させる、十字盤のパズルゲーム。">
+  <meta name="theme-color" content="#6c5ce7">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <main class="app">
+    <header class="top">
+      <h1 class="logo"><span>ペグ</span><span>ブロック</span></h1>
+      <button class="icon-btn" id="btn-rules" type="button" aria-label="ルール">?</button>
+    </header>
+
+    <section class="stats" aria-label="スコア">
+      <div class="stat stat-score"><span class="label">得点</span><span class="value" id="score">0</span></div>
+      <div class="stat"><span class="label">ベスト</span><span class="value" id="best">0</span></div>
+      <div class="stat"><span class="label">手数</span><span class="value" id="moves">0</span></div>
+      <div class="stat"><span class="label">補充</span><span class="value" id="refills">0</span></div>
+    </section>
+
+    <div class="next">
+      次の補充 <span class="chip" id="next-refill">2</span>
+      <span class="next-note">盤上でいちばん小さい数字</span>
+    </div>
+
+    <div class="board-wrap" id="board-wrap">
+      <canvas id="board" aria-label="ゲーム盤"></canvas>
+    </div>
+
+    <nav class="controls">
+      <button class="btn btn-undo" id="btn-undo" type="button">↶ 戻す</button>
+      <button class="btn btn-new" id="btn-new" type="button">新しいゲーム</button>
+    </nav>
+  </main>
+
+  <dialog id="dlg-over" class="dlg">
+    <h2>積み！</h2>
+    <p class="best-badge" id="best-badge" hidden>ベスト更新！</p>
+    <dl class="result">
+      <div><dt>得点</dt><dd id="r-score">0</dd></div>
+      <div><dt>手数</dt><dd id="r-moves">0</dd></div>
+      <div><dt>補充回数</dt><dd id="r-refills">0</dd></div>
+      <div><dt>最大の数字</dt><dd id="r-max">0</dd></div>
+      <div><dt>戻した回数</dt><dd id="r-undos">0</dd></div>
+    </dl>
+    <div class="dlg-actions">
+      <button class="btn btn-undo" id="over-undo" type="button">↶ 1手戻す</button>
+      <button class="btn btn-new" id="over-new" type="button">もう一度</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-rules" class="dlg">
+    <h2>あそびかた</h2>
+    <ol class="rules">
+      <li>ペグを選び、<b>同じ数字</b>の隣のペグを縦か横に飛び越えて、その先の空きマスへ。</li>
+      <li>飛び越えられたペグは消え、動かしたペグは<b>2倍</b>に。できた数字がそのまま得点です。</li>
+      <li>四方の腕（色つきの2×3）のペグが<b>全部なくなる</b>と、その腕がまるごと補充されます。中央は補充されません。</li>
+      <li>補充される数字は、<b>そのとき盤上にあるいちばん小さい数字</b>。2が無くなれば4、4も無くなれば8…と上がっていきます。</li>
+      <li>どのペグも動かせなくなったら終了。「戻す」は何回でも使えます。</li>
+    </ol>
+    <div class="dlg-actions">
+      <button class="btn btn-new" id="rules-close" type="button">とじる</button>
+    </div>
+  </dialog>
+
+  <script src="logic.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
