@@ -6,9 +6,9 @@
 //   どの組み合わせでも濁らないメジャー・ペンタトニック（ド・レ・ミ・ソ・ラ）に限る。
 // - 刺さる帯域を削る：不快さに最も効く 2〜4kHz を避け、基音を低めにし、全体にローパスをかける。
 // - うなりを作らない：同時に鳴らす音をわずかにずらす「デチューン」はせず、ざらつきを避ける。
-// - 達成感を音程で伝える：大きい数字ができるほど、また連続で合体するほど音が上がる。ただし上がりすぎは
+// - 達成感を音程で伝える：連続でジャンプするほど音が上がる。ただし上がりすぎは
 //   耳障りなので上限を設け、間が空いたらリセットする。
-// - 聞き飽きさせない：合体音などよく鳴る音は毎回わずかに音程を揺らす。補充やベスト更新の
+// - 聞き飽きさせない：ジャンプ音などよく鳴る音は毎回わずかに音程を揺らす。補充やベスト更新の
 //   「ごほうび」の音は毎回同じにして、覚えられる合図にする。
 // - 失敗は責めない：動かせないときは、低く柔らかい下降2音を短く鳴らすだけにする。
 (function (root) {
@@ -93,32 +93,21 @@
       if (ctx) (v ? ctx.suspend() : ctx.resume());
     },
 
-    // 玉を選んだ：小さく上がる「ぽっ」
+    // ペグを選んだ：小さく上がる「ぽっ」
     select() {
       if (!ensure()) return;
       tone(wobble(440, 25), { dur: 0.09, gain: 0.16, glideTo: 660, glideTime: 0.05, partials: SOFT });
     },
 
-    // 合体：着地の軽い「とん」＋ 上がる2音のベル。level は log2(できた数字)、combo は連続回数
-    merge(level, combo) {
+    // ジャンプ：着地の軽い「とん」＋ 上がる2音のベル。combo は連続回数
+    jump(combo) {
       if (!ensure()) return;
       tone(150, { dur: 0.12, gain: 0.22, glideTo: 70, glideTime: 0.1, partials: SOFT });
-      const step = Math.min(level - 2 + Math.min(combo, 5), 11);
+      const step = Math.min(combo, 8);
       const f1 = wobble(penta(step), 8);
       const f2 = wobble(penta(step + 2), 8);
       tone(f1, { at: 0.0, dur: 0.35, gain: 0.2, partials: BELL });
       tone(f2, { at: 0.07, dur: 0.5, gain: 0.22, partials: BELL });
-    },
-
-    // 補充：ブロックが落ちる間隔に合わせて上がるアルペジオ（毎回同じ＝覚えられる合図）
-    refill(count, stagger) {
-      if (!ensure()) return;
-      const steps = [5, 7, 8, 9, 10, 12];
-      for (let i = 0; i < count; i++) {
-        tone(penta(steps[i % steps.length] + 5 * Math.floor(i / steps.length) - 2), {
-          at: 0.05 + (i * stagger) / 1000, dur: 0.28, gain: 0.13, partials: BELL,
-        });
-      }
     },
 
     // 動かせない：低く柔らかい下降2音
@@ -126,14 +115,6 @@
       if (!ensure()) return;
       tone(330, { dur: 0.12, gain: 0.13, partials: SOFT });
       tone(262, { at: 0.09, dur: 0.16, gain: 0.13, partials: SOFT });
-    },
-
-    // 玉が小さく弾んで盤に当たる「こつ」。strength は 0〜1（弾むたびに小さくなる）
-    tick(strength) {
-      if (!ensure()) return;
-      const k = Math.max(0.15, Math.min(1, strength));
-      tone(wobble(880, 30), { dur: 0.05, gain: 0.1 * k, partials: SOFT });
-      tone(180, { dur: 0.06, gain: 0.12 * k, glideTo: 110, glideTime: 0.05, partials: SOFT });
     },
 
     // 新しいゲーム：ド・ミ・ソ

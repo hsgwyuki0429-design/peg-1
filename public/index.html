@@ -2,113 +2,65 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <title>ペグブロック</title>
-  <meta name="description" content="同じ数字の玉を飛び越えて合体させる、十字盤のパズルゲーム。">
-  <meta name="theme-color" content="#487af0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ブロックブロック</title>
+  <meta name="description" content="ブロックを飛び越えて取っていく、十字盤のパズルゲーム。">
+  <meta name="theme-color" content="#7b2ff7">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
+  <main class="app">
     <header class="top">
-      <div class="top-left">
-        <button id="btn-new" class="round-btn" type="button" aria-label="新しいゲーム">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.54 6.72 A9.20 9.20 0 1 1 8.85 3.35 L9.81 5.99 A6.40 6.40 0 1 0 17.24 8.33 Z" /><path d="M19.61 4.91 L22.02 8.55 L16.73 10.37 Z" /></svg>
-        </button>
-        <button id="btn-rules" class="round-btn" type="button" aria-label="あそびかた">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6a9.4 9.4 0 1 1 0 18.8 9.4 9.4 0 0 1 0-18.8zm-.1 13.3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm.2-10.4c-2.3 0-3.9 1.3-4.1 3.4l2.5.3c.1-.9.7-1.4 1.6-1.4.9 0 1.5.5 1.5 1.3 0 .6-.3 1-1.1 1.5-1.2.7-1.7 1.5-1.7 2.8v.6h2.4v-.4c0-.7.3-1 1.1-1.5 1.2-.7 1.9-1.6 1.9-3 0-2.2-1.7-3.6-4.1-3.6z" /></svg>
-        </button>
-      </div>
-      <div class="best-pill">
-        <svg class="crown" viewBox="0 0 64 54" aria-hidden="true">
-          <defs>
-            <linearGradient id="crownG" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#fff0a0" /><stop offset=".45" stop-color="#ffcc2e" /><stop offset="1" stop-color="#d98800" />
-            </linearGradient>
-            <linearGradient id="crownB" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#ffd64a" /><stop offset="1" stop-color="#c77700" />
-            </linearGradient>
-          </defs>
-          <ellipse cx="32" cy="50" rx="26" ry="3.5" fill="rgba(0,0,0,.22)" />
-          <path d="M7 17 L16 31 L19.5 12 L27 29 L32 8 L37 29 L44.5 12 L48 31 L57 17 L53 41 H11 Z" fill="url(#crownG)" stroke="#b36b00" stroke-width="1.6" stroke-linejoin="round" />
-          <rect x="10" y="39" width="44" height="9" rx="2.5" fill="url(#crownB)" stroke="#b36b00" stroke-width="1.6" />
-          <circle cx="7" cy="15" r="3.6" fill="url(#crownG)" stroke="#b36b00" stroke-width="1.2" />
-          <circle cx="19.5" cy="10" r="3.4" fill="url(#crownG)" stroke="#b36b00" stroke-width="1.2" />
-          <circle cx="32" cy="6" r="4" fill="url(#crownG)" stroke="#b36b00" stroke-width="1.2" />
-          <circle cx="44.5" cy="10" r="3.4" fill="url(#crownG)" stroke="#b36b00" stroke-width="1.2" />
-          <circle cx="57" cy="15" r="3.6" fill="url(#crownG)" stroke="#b36b00" stroke-width="1.2" />
-          <circle cx="32" cy="32" r="3.8" fill="#e8364a" stroke="#8a1020" stroke-width="1" />
-          <circle cx="19" cy="35" r="2.4" fill="#3d8bff" stroke="#16408a" stroke-width=".8" />
-          <circle cx="45" cy="35" r="2.4" fill="#3d8bff" stroke="#16408a" stroke-width=".8" />
-          <path d="M14 42.5 H50" stroke="rgba(255,255,255,.45)" stroke-width="1.4" stroke-linecap="round" />
-        </svg>
-        <div class="best-text"><span class="best-label">ベストスコア</span><span id="best">0</span></div>
-      </div>
+      <h1 class="logo"><span>ペ</span><span>グ</span><span>ブ</span><span>ロ</span><span>ッ</span><span>ク</span></h1>
       <div class="top-btns">
-        <button id="btn-sound" class="round-btn" type="button" aria-label="サウンド">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.2 3.4v10.3a4 4 0 1 0 2.3 3.6V8.1h4.6V3.4z" /></svg>
-        </button>
+        <button class="icon-btn" id="btn-sound" type="button" aria-label="音のオン・オフ">🔊</button>
+        <button class="icon-btn" id="btn-rules" type="button" aria-label="ルール">?</button>
       </div>
     </header>
 
-    <div class="score-wrap">
-      <div id="score" class="score">0</div>
-      <div class="sub-stats">
-        <span>残り <b id="left">0</b></span>
-        <span>補充 <b id="refills">0</b></span>
-        <span>次の補充<span class="chip" id="next-refill">2</span></span>
-      </div>
-    </div>
+    <section class="stats" aria-label="スコア">
+      <div class="stat stat-score"><span class="label">得点</span><span class="value" id="score">0</span></div>
+      <div class="stat stat-best"><span class="label">ベスト</span><span class="value" id="best">0</span></div>
+      <div class="stat stat-moves"><span class="label">残り</span><span class="value" id="left">0</span></div>
 
-    <div class="stage">
-      <div class="board-frame">
+    </section>
+
+    <div class="board-area">
+      <div class="board-frame" id="frame">
         <div class="board" id="board" aria-label="ゲーム盤"></div>
-        <span class="arm-label" data-arm="top"></span>
-        <span class="arm-label" data-arm="right"></span>
-        <span class="arm-label" data-arm="bottom"></span>
-        <span class="arm-label" data-arm="left"></span>
       </div>
     </div>
 
-    <div class="brand" aria-hidden="true">
-      <svg class="brand-logo" viewBox="0 0 32 32"><rect x=".5" y=".5" width="31" height="31" rx="7" fill="#2b4bbf" stroke="#96c0ff" /><path d="M12 5h8v7h7v8h-7v7h-8v-7H5v-8h7z" fill="#ffd23f" /></svg>
-      <span class="brand-name">pegblock</span>
-      <span id="brand-url" class="brand-url"></span>
-    </div>
-  </div>
+    <nav class="controls">
+      <button class="btn btn-new" id="btn-new" type="button">新しいゲーム</button>
+    </nav>
+  </main>
 
-  <dialog id="dlg-over" class="overlay">
-    <div class="overlay-box" tabindex="-1" autofocus>
-      <p class="over-title">動かせる玉がない！</p>
-      <p class="over-label">SCORE</p>
-      <p id="r-score" class="over-score">0</p>
-      <p class="over-best" id="best-badge" hidden>ベストスコア更新！</p>
-      <div class="over-stats">
-        <div class="stat"><span class="stat-label">残りの玉</span><span class="stat-val" id="r-left">0</span></div>
-        <div class="stat"><span class="stat-label">最大の数字</span><span class="stat-val" id="r-max">0</span></div>
-        <div class="stat"><span class="stat-label">補充</span><span class="stat-val" id="r-refills">0</span></div>
-      </div>
-      <div class="over-actions">
-        <button class="primary gold" id="over-new" type="button">もう一度</button>
-      </div>
+  <dialog id="dlg-over" class="dlg">
+    <h2>積み！</h2>
+    <p class="best-badge" id="best-badge" hidden>ベスト更新！</p>
+    <dl class="result">
+      <div><dt>得点</dt><dd id="r-score">0</dd></div>
+      <div><dt>残りブロック</dt><dd id="r-left">0</dd></div>
+    </dl>
+    <div class="dlg-actions">
+      <button class="btn btn-new" id="over-new" type="button">もう一度</button>
     </div>
   </dialog>
 
-  <dialog id="dlg-rules" class="overlay">
-    <div class="overlay-box rules-box" tabindex="-1" autofocus>
-      <p class="over-title">あそびかた</p>
-      <ol class="rules">
-        <li>玉を<b>スワイプ</b>すると、その方向に隣り合う<b>同じ数字</b>の玉を飛び越えて、先の空きマスへ移動します。タップで選んでから移動先をタップしてもOK。斜めには動けません。</li>
-        <li>飛び越えた玉は取られ、動かした玉の数字は<b>2倍</b>に。できた数字がそのまま得点です。</li>
-        <li>四方の腕（2×3）の玉が<b>全部なくなる</b>と、その腕の6マスに玉がまるごと補充されます。腕の外の数字は、その腕に残っている玉の数です。中央は補充されません。</li>
-        <li>補充される数字は、<b>そのとき盤上にあるいちばん小さい数字</b>。2が無くなれば4、4も無くなれば8…と上がっていきます。</li>
-        <li>どの玉も動かせなくなったら終了です。</li>
-      </ol>
-      <button class="primary gold" id="rules-close" type="button">はじめる</button>
+  <dialog id="dlg-rules" class="dlg">
+    <h2>あそびかた</h2>
+    <ol class="rules">
+      <li>ブロックを<b>スワイプ</b>すると、その方向に隣り合うブロックを1つ飛び越えて、先の空きマスへ移動します。タップで選んでから移動先をタップしてもOK。</li>
+      <li>飛び越えたブロックは盤から消えて、<b>1点</b>。斜めには動けません。</li>
+      <li>どのブロックも動かせなくなったら終了です。取った数が多いほど高得点。</li>
+    </ol>
+    <div class="dlg-actions">
+      <button class="btn btn-new" id="rules-close" type="button">はじめる</button>
     </div>
   </dialog>
 
