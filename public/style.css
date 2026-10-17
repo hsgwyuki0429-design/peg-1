@@ -55,6 +55,8 @@ button{font-family:inherit;cursor:pointer;}
 .score.bump{animation:bump 260ms cubic-bezier(.3,1.6,.5,1);}
 @keyframes bump{40%{scale:1.12}}
 .sub-stats{display:flex;gap:16px;margin-top:4px;font-family:"M PLUS Rounded 1c",sans-serif;font-size:13px;font-weight:800;color:var(--dim);}
+.sub-stats .chip{display:inline-block;min-width:26px;margin-left:4px;padding:1px 7px;border-radius:9px;text-align:center;
+  font-family:"Round One","Nunito",sans-serif;font-size:15px;font-weight:900;box-shadow:0 2px 0 rgba(0,0,0,.18);}
 .sub-stats b{font-family:"Round One","Nunito",sans-serif;font-size:16px;font-weight:900;color:#fff;text-shadow:var(--ts-s);}
 
 /* ---- 盤面 ---- */
@@ -103,12 +105,22 @@ button{font-family:inherit;cursor:pointer;}
     radial-gradient(ellipse 42% 20% at 58% 86%,rgba(255,255,255,.3),rgba(255,255,255,0) 100%);
   box-shadow:inset -3px -4px 7px rgba(10,6,48,.3),inset 2px 2px 3px rgba(255,255,255,.25);}
 
-/* 色（blockmancala と同じ値）。玉の色は出身の区画で決まる */
-.marble[data-v='1']{--col:#a849fe;--hi:#ddbcfe;--lo:#600cf0;}   /* 中央: purple */
-.marble[data-v='2']{--col:#22e545;--hi:#8ef8a6;--lo:#0ca42c;}   /* 上: green */
-.marble[data-v='3']{--col:#ff8c06;--hi:#ffca7c;--lo:#dc5500;}   /* 右: orange */
-.marble[data-v='4']{--col:#ff3f5c;--hi:#ffa9c1;--lo:#c80a3a;}   /* 下: red */
-.marble[data-v='5']{--col:#ffe214;--hi:#fff5a0;--lo:#efae00;}   /* 左: yellow */
+/* 数字（玉の上面に印刷されたように見せる。転がっても読めるよう向きは固定。映り込みはその上に乗る） */
+.m-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:"Round One","Nunito",sans-serif;font-weight:900;font-size:calc(var(--cell) * var(--k,.5));line-height:1;
+  color:var(--ink,#fff);text-shadow:0 1.5px 1.5px rgba(0,0,0,.22);letter-spacing:-.02em;}
+
+/* 数字ごとの色（data-c = log2(数字)。2〜128 は blockmancala と同じ値、その先を足し、11 からは巡回）。--ink は数字の色 */
+.marble[data-c='1']{--col:#ff3f5c;--hi:#ffa9c1;--lo:#c80a3a;--ink:#fff;}      /* 2 */
+.marble[data-c='2']{--col:#ff8c06;--hi:#ffca7c;--lo:#dc5500;--ink:#fff;}      /* 4 */
+.marble[data-c='3']{--col:#ffe214;--hi:#fff5a0;--lo:#efae00;--ink:#7a4a00;}   /* 8 */
+.marble[data-c='4']{--col:#22e545;--hi:#8ef8a6;--lo:#0ca42c;--ink:#fff;}      /* 16 */
+.marble[data-c='5']{--col:#12e0ff;--hi:#7af3ff;--lo:#0590e2;--ink:#06306e;}   /* 32 */
+.marble[data-c='6']{--col:#3f6dff;--hi:#a8bfff;--lo:#1c38cc;--ink:#fff;}      /* 64 */
+.marble[data-c='7']{--col:#a849fe;--hi:#ddbcfe;--lo:#600cf0;--ink:#fff;}      /* 128 */
+.marble[data-c='8']{--col:#ff4fd8;--hi:#ffb3ef;--lo:#c4129e;--ink:#fff;}      /* 256 */
+.marble[data-c='9']{--col:#e8edff;--hi:#ffffff;--lo:#8f9cc4;--ink:#2b3a7a;}   /* 512 */
+.marble[data-c='10']{--col:#ffc93c;--hi:#fff0a0;--lo:#c77700;--ink:#5a3000;}  /* 1024 */
 
 /* 得点などの文字: ベタ塗り + 真下への薄い影だけ（ふち取り・光のにじみは使わない） */
 .popup{position:absolute;width:calc(100% / 7);left:calc(var(--c) * 100% / 7);top:calc(var(--r) * 100% / 7);z-index:8;
@@ -123,11 +135,12 @@ button{font-family:inherit;cursor:pointer;}
   text-shadow:var(--ts-s);transition:scale 160ms cubic-bezier(.3,1.6,.5,1);}
 .arm-label::before{content:'';position:absolute;left:50%;top:50%;width:1.65em;height:1.65em;translate:-50% -50%;z-index:-1;border-radius:50%;
   background:var(--col);box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 2px 2px rgba(0,0,0,.18);}
-.arm-label.low{scale:1.25;}
-.arm-label[data-arm='top']{--col:#22e545;left:50%;top:13px;}
-.arm-label[data-arm='bottom']{--col:#ff3f5c;left:50%;top:calc(100% - 13px);}
-.arm-label[data-arm='left']{--col:#efae00;left:calc(6px + (100% - 12px) / 7);top:calc(28px + (100% - 56px) * 5 / 7 + 16px);}
-.arm-label[data-arm='right']{--col:#ff8c06;left:calc(6px + (100% - 12px) * 6 / 7);top:calc(28px + (100% - 56px) * 5 / 7 + 16px);}
+.arm-label{--col:#2b4bbf;}
+.arm-label.low{scale:1.25;--col:#ff3f5c;}
+.arm-label[data-arm='top']{left:50%;top:13px;}
+.arm-label[data-arm='bottom']{left:50%;top:calc(100% - 13px);}
+.arm-label[data-arm='left']{left:calc(6px + (100% - 12px) / 7);top:calc(28px + (100% - 56px) * 5 / 7 + 16px);}
+.arm-label[data-arm='right']{left:calc(6px + (100% - 12px) * 6 / 7);top:calc(28px + (100% - 56px) * 5 / 7 + 16px);}
 
 /* ---- 下の操作・ゲーム名 ---- */
 .primary{border:1.5px solid var(--line);border-radius:24px;padding:12px 40px;font-family:"M PLUS Rounded 1c",sans-serif;
