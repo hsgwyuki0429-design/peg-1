@@ -81,57 +81,37 @@ button{font-family:inherit;cursor:pointer;}
   box-shadow:inset -1.5px -1.5px 3px rgba(4,12,60,.35),inset 1px 1px 0 rgba(255,255,255,.35);}
 @keyframes hintPulse{from{scale:.88}to{scale:1}}
 
-/* ---- ペグ（宝石） ----
-   光源は画面の「左上」ひとつ。本体 = ::before（四方のふちの面をそれぞれの明るさで塗り分け、上の面に細長い映り込み）、
-   テーブル面 = ::after（左上ほど明るい、なだらかな面）。要素は位置だけを持つ透明な箱で、拡大縮小は .face に掛ける */
-.tile{position:absolute;left:0;top:0;width:calc(100% / 7);height:calc(100% / 7);z-index:2;pointer-events:none;
-  transform:translate(calc(var(--c) * 100%),calc(var(--r) * 100%));
-  transition:transform 200ms cubic-bezier(.3,.7,.4,1);}
-.tile.moving{z-index:4;}
-.face{position:absolute;inset:0;
-  --f1:color-mix(in srgb,var(--col),#fffbe8 48%);   /* 上の面: 光を正面から受ける（暖かい白へ） */
-  --f2:color-mix(in srgb,var(--col),#fff 16%);      /* 左の面: 少し明るい */
-  --f3:color-mix(in srgb,var(--col),var(--lo) 62%); /* 右の面: 影側 */
-  --f4:color-mix(in srgb,var(--lo),#160b48 10%);    /* 下の面: 一番暗い（影は彩度を保ったまま寒色寄りへ） */
-  --t1:color-mix(in srgb,var(--col),var(--lo) 34%);
-  --t2:color-mix(in srgb,var(--col),#fff8e0 14%);
-  transition:scale 120ms ease;}
-.face::before{content:'';position:absolute;inset:4%;border-radius:18%;
+/* ---- 玉（ビー玉） ----
+   光源は左上。本体 = 球のグラデーション、中に転がると流れる模様（.m-tex）、いちばん上に動かない映り込み（::after）。
+   位置・高さ・影は game.js が毎フレーム書く（高さは「少し大きく・少し上に・影が離れて薄く」で見せる） */
+.marble{position:absolute;left:0;top:0;width:calc(100% / 7);height:calc(100% / 7);z-index:3;pointer-events:none;will-change:transform;}
+.m-shadow{position:absolute;inset:16%;border-radius:50%;background:radial-gradient(circle,rgba(4,12,60,.55) 0,rgba(4,12,60,.35) 45%,rgba(4,12,60,0) 72%);
+  will-change:transform,opacity;}
+.m-body{position:absolute;inset:11%;border-radius:50%;overflow:hidden;will-change:transform;
+  background:radial-gradient(circle at 36% 30%,var(--hi) 0,var(--col) 40%,var(--lo) 86%,color-mix(in srgb,var(--lo),#0a0630 35%) 100%);
+  box-shadow:0 0 0 .5px color-mix(in srgb,var(--lo),#000 30%);}
+/* 中の模様（ガラス玉の中のすじ）。大きめの面を転がった分だけずらして、回っているように見せる */
+.m-tex{position:absolute;left:-100%;top:-100%;width:300%;height:300%;opacity:.55;mix-blend-mode:soft-light;
   background:
-    radial-gradient(circle at 24% 9%,rgba(255,255,255,.95) 0 2.5%,rgba(255,255,255,0) 7%),
-    radial-gradient(ellipse 26% 6% at 46% 9%,rgba(255,255,255,.7),rgba(255,255,255,0) 100%),
-    conic-gradient(var(--f1) 0 44deg,var(--f3) 46deg 134deg,var(--f4) 136deg 224deg,var(--f2) 226deg 314deg,var(--f1) 316deg);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 1px 0 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(255,255,255,.12),
-             1.8px 1.8px 4px rgba(4,14,64,.38),0 0 1.5px rgba(4,14,64,.45);}
-.face::after{content:'';position:absolute;inset:20%;border-radius:14%;
+    repeating-linear-gradient(118deg,rgba(255,255,255,0) 0 7%,rgba(255,255,255,.9) 9% 11%,rgba(255,255,255,0) 13% 16.66%),
+    repeating-linear-gradient(28deg,rgba(0,0,40,0) 0 10%,rgba(0,0,40,.5) 12% 13%,rgba(0,0,40,0) 15% 16.66%);}
+/* 映り込み（光は左上からなので、球の左上に強い点、下側に回り込んだ淡い光）と、球のふちの陰 */
+.m-body::after{content:'';position:absolute;inset:0;border-radius:50%;
   background:
-    radial-gradient(ellipse 60% 50% at 30% 18%,rgba(255,255,255,.3),rgba(255,255,255,0) 70%),
-    linear-gradient(to top left,var(--t1),var(--col) 55%,var(--t2));
-  box-shadow:inset 0 .8px 0 rgba(255,255,255,.3),inset 0 -.8px 0 rgba(0,0,0,.08),inset -.8px 0 0 rgba(0,0,0,.06);}
+    radial-gradient(circle at 33% 27%,rgba(255,255,255,.95) 0 6%,rgba(255,255,255,0) 15%),
+    radial-gradient(ellipse 22% 12% at 54% 18%,rgba(255,255,255,.45),rgba(255,255,255,0) 100%),
+    radial-gradient(ellipse 42% 20% at 58% 86%,rgba(255,255,255,.3),rgba(255,255,255,0) 100%);
+  box-shadow:inset -3px -4px 7px rgba(10,6,48,.3),inset 2px 2px 3px rgba(255,255,255,.25);}
 
-/* 色（blockmancala と同じ値）。ペグの色は出身の区画で決まる */
-.tile[data-v='1']{--col:#a849fe;--lo:#600cf0;}   /* 中央: purple */
-.tile[data-v='2']{--col:#22e545;--lo:#0ca42c;}   /* 上: green */
-.tile[data-v='3']{--col:#ff8c06;--lo:#dc5500;}   /* 右: orange */
-.tile[data-v='4']{--col:#ff3f5c;--lo:#c80a3a;}   /* 下: red */
-.tile[data-v='5']{--col:#ffe214;--lo:#efae00;}   /* 左: yellow */
-
-.tile.selected .face{scale:1.1;}
-.tile.selected .face::before{outline:2.5px solid #fff;outline-offset:1px;animation:selPulse 620ms ease-in-out infinite alternate;}
-@keyframes selPulse{from{outline-color:rgba(255,255,255,.7)}to{outline-color:#fff}}
-.tile.moving .face{animation:hop 200ms ease-out;}
-.tile.landed .face{animation:land 240ms ease-out;}
-.tile.vanish .face{animation:vanish 200ms ease-in forwards;}
-.tile.spawn .face{animation:spawn 380ms cubic-bezier(.3,1.6,.5,1) backwards;animation-delay:var(--delay,0ms);}
-.tile.shake .face{animation:shake 300ms ease;}
-@keyframes hop{50%{scale:1.2}}
-@keyframes land{0%{scale:1.12}24%{scale:.9}58%{scale:1.035}100%{scale:1}}
-@keyframes vanish{to{scale:0;opacity:.6}}
-@keyframes spawn{0%{scale:0}70%{scale:1.14}100%{scale:1}}
-@keyframes shake{20%{translate:-8% 0}40%{translate:7% 0}60%{translate:-5% 0}80%{translate:3% 0}}
+/* 色（blockmancala と同じ値）。玉の色は出身の区画で決まる */
+.marble[data-v='1']{--col:#a849fe;--hi:#ddbcfe;--lo:#600cf0;}   /* 中央: purple */
+.marble[data-v='2']{--col:#22e545;--hi:#8ef8a6;--lo:#0ca42c;}   /* 上: green */
+.marble[data-v='3']{--col:#ff8c06;--hi:#ffca7c;--lo:#dc5500;}   /* 右: orange */
+.marble[data-v='4']{--col:#ff3f5c;--hi:#ffa9c1;--lo:#c80a3a;}   /* 下: red */
+.marble[data-v='5']{--col:#ffe214;--hi:#fff5a0;--lo:#efae00;}   /* 左: yellow */
 
 /* 得点などの文字: ベタ塗り + 真下への薄い影だけ（ふち取り・光のにじみは使わない） */
-.popup{position:absolute;width:calc(100% / 7);left:calc(var(--c) * 100% / 7);top:calc(var(--r) * 100% / 7);z-index:6;
+.popup{position:absolute;width:calc(100% / 7);left:calc(var(--c) * 100% / 7);top:calc(var(--r) * 100% / 7);z-index:8;
   text-align:center;font-weight:900;font-size:calc(var(--cell) * .5);line-height:1;color:#fff;text-shadow:var(--ts);
   pointer-events:none;white-space:nowrap;animation:float 800ms ease-out forwards;}
 .popup.wide{width:auto;left:calc((var(--c) + .5) * 100% / 7);translate:-50% 0;font-family:"M PLUS Rounded 1c",sans-serif;
@@ -155,9 +135,7 @@ button{font-family:inherit;cursor:pointer;}
 .primary:active{background:rgba(120,160,255,.3);}
 .primary:disabled{opacity:.4;}
 .primary.gold{border-color:var(--gold);background:rgba(255,213,74,.18);color:var(--gold);}
-.undo-btn{flex-shrink:0;display:flex;align-items:center;gap:8px;margin:6px 0 10px;padding:10px 30px;font-size:16px;}
-.undo-btn svg{width:18px;height:18px;fill:currentColor;}
-.brand{flex-shrink:0;max-width:100%;height:18px;display:flex;align-items:center;justify-content:center;gap:6px;
+.brand{flex-shrink:0;max-width:100%;height:18px;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;
   font-size:min(11px,2.9vw);font-weight:800;line-height:1;color:#c4d6ff;text-shadow:var(--ts-s);white-space:nowrap;pointer-events:none;}
 .brand-logo{width:15px;height:15px;flex-shrink:0;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18));}
 .brand-name{font-weight:900;color:#fff;}
@@ -185,3 +163,4 @@ button{font-family:inherit;cursor:pointer;}
 .rules b{color:var(--gold);font-weight:900;}
 button:focus:not(:focus-visible){outline:none;}
 button:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+.overlay-box:focus{outline:none;}

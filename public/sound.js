@@ -93,7 +93,7 @@
       if (ctx) (v ? ctx.suspend() : ctx.resume());
     },
 
-    // ペグを選んだ：小さく上がる「ぽっ」
+    // 玉を選んだ：小さく上がる「ぽっ」
     select() {
       if (!ensure()) return;
       tone(wobble(440, 25), { dur: 0.09, gain: 0.16, glideTo: 660, glideTime: 0.05, partials: SOFT });
@@ -128,10 +128,12 @@
       tone(262, { at: 0.09, dur: 0.16, gain: 0.13, partials: SOFT });
     },
 
-    // 戻す：ふわっと下がる
-    undo() {
+    // 玉が小さく弾んで盤に当たる「こつ」。strength は 0〜1（弾むたびに小さくなる）
+    tick(strength) {
       if (!ensure()) return;
-      tone(560, { dur: 0.14, gain: 0.12, glideTo: 350, glideTime: 0.12, partials: SOFT });
+      const k = Math.max(0.15, Math.min(1, strength));
+      tone(wobble(880, 30), { dur: 0.05, gain: 0.1 * k, partials: SOFT });
+      tone(180, { dur: 0.06, gain: 0.12 * k, glideTo: 110, glideTime: 0.05, partials: SOFT });
     },
 
     // 新しいゲーム：ド・ミ・ソ
