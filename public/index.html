@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>ペグブロック</title>
   <meta name="description" content="同じ数字のペグを飛び越えて合体させる、十字盤のパズルゲーム。">
-  <meta name="theme-color" content="#6c5ce7">
+  <meta name="theme-color" content="#7b2ff7">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,18 +13,20 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="bg" aria-hidden="true"></div>
   <main class="app">
     <header class="top">
-      <h1 class="logo"><span>ペグ</span><span>ブロック</span></h1>
-      <button class="icon-btn" id="btn-rules" type="button" aria-label="ルール">?</button>
+      <h1 class="logo"><span>ペ</span><span>グ</span><span>ブ</span><span>ロ</span><span>ッ</span><span>ク</span></h1>
+      <div class="top-btns">
+        <button class="icon-btn" id="btn-sound" type="button" aria-label="音のオン・オフ">🔊</button>
+        <button class="icon-btn" id="btn-rules" type="button" aria-label="ルール">?</button>
+      </div>
     </header>
 
     <section class="stats" aria-label="スコア">
       <div class="stat stat-score"><span class="label">得点</span><span class="value" id="score">0</span></div>
-      <div class="stat"><span class="label">ベスト</span><span class="value" id="best">0</span></div>
-      <div class="stat"><span class="label">手数</span><span class="value" id="moves">0</span></div>
-      <div class="stat"><span class="label">補充</span><span class="value" id="refills">0</span></div>
+      <div class="stat stat-best"><span class="label">ベスト</span><span class="value" id="best">0</span></div>
+      <div class="stat stat-moves"><span class="label">手数</span><span class="value" id="moves">0</span></div>
+      <div class="stat stat-refills"><span class="label">補充</span><span class="value" id="refills">0</span></div>
     </section>
 
     <div class="next">
@@ -32,8 +34,14 @@
       <span class="next-note">盤上でいちばん小さい数字</span>
     </div>
 
-    <div class="board-wrap" id="board-wrap">
-      <canvas id="board" aria-label="ゲーム盤"></canvas>
+    <div class="board-area">
+      <div class="board-frame" id="frame">
+        <div class="board" id="board" aria-label="ゲーム盤"></div>
+        <span class="arm-label" data-arm="top"></span>
+        <span class="arm-label" data-arm="right"></span>
+        <span class="arm-label" data-arm="bottom"></span>
+        <span class="arm-label" data-arm="left"></span>
+      </div>
     </div>
 
     <nav class="controls">
@@ -61,18 +69,19 @@
   <dialog id="dlg-rules" class="dlg">
     <h2>あそびかた</h2>
     <ol class="rules">
-      <li>ペグを選び、<b>同じ数字</b>の隣のペグを縦か横に飛び越えて、その先の空きマスへ。</li>
+      <li>ペグを<b>スワイプ</b>すると、その方向の<b>同じ数字</b>のペグを飛び越えて、先の空きマスへ移動します。タップで選んでから移動先をタップしてもOK。</li>
       <li>飛び越えられたペグは消え、動かしたペグは<b>2倍</b>に。できた数字がそのまま得点です。</li>
       <li>四方の腕（色つきの2×3）のペグが<b>全部なくなる</b>と、その腕がまるごと補充されます。中央は補充されません。</li>
       <li>補充される数字は、<b>そのとき盤上にあるいちばん小さい数字</b>。2が無くなれば4、4も無くなれば8…と上がっていきます。</li>
       <li>どのペグも動かせなくなったら終了。「戻す」は何回でも使えます。</li>
     </ol>
     <div class="dlg-actions">
-      <button class="btn btn-new" id="rules-close" type="button">とじる</button>
+      <button class="btn btn-new" id="rules-close" type="button">はじめる</button>
     </div>
   </dialog>
 
   <script src="logic.js"></script>
+  <script src="sound.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
