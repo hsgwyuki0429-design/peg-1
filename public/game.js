@@ -60,6 +60,15 @@
     d.dataset.region = L.regionOf(r, c);
     d.style.setProperty('--r', r);
     d.style.setProperty('--c', c);
+    // 十字の外側の角だけ丸める
+    const open = (dr, dc) => !L.isCell(r + dr, c + dc);
+    if (open(-1, 0) && open(0, -1)) d.classList.add('tl');
+    if (open(-1, 0) && open(0, 1)) d.classList.add('tr');
+    if (open(1, 0) && open(0, -1)) d.classList.add('bl');
+    if (open(1, 0) && open(0, 1)) d.classList.add('br');
+    const mark = document.createElement('span');
+    mark.className = 'mark';
+    d.appendChild(mark);
     boardEl.appendChild(d);
     cellEls[i] = d;
   }
@@ -72,7 +81,7 @@
     probe.dataset.v = v;
     probe.style.display = 'none';
     boardEl.appendChild(probe);
-    const col = getComputedStyle(probe).getPropertyValue('--lo').trim() || '#ff3d77';
+    const col = getComputedStyle(probe).getPropertyValue('--col').trim() || '#ffffff';
     probe.remove();
     colorCache.set(v, col);
     return col;
@@ -279,7 +288,7 @@
   function updateArms() {
     for (const label of document.querySelectorAll('.arm-label')) {
       const left = L.ARMS[label.dataset.arm].filter((i) => state.board[i]).length;
-      label.textContent = `あと${left}`;
+      label.textContent = left;
       label.classList.toggle('low', left <= 2);
     }
   }
@@ -355,7 +364,8 @@
   }
 
   function updateSoundButton() {
-    el('btn-sound').textContent = S.muted ? '🔇' : '🔊';
+    el('btn-sound').classList.toggle('off', S.muted);
+    el('btn-sound').setAttribute('aria-pressed', String(!S.muted));
   }
 
   // ---------- 起動 ----------
@@ -363,6 +373,7 @@
   renderAll();
   updateHud(false);
   updateSoundButton();
+  el('brand-url').textContent = location.host;
   resize();
   new ResizeObserver(resize).observe(boardEl);
 

@@ -1,7 +1,9 @@
 # ペグブロック
 
 十字盤のペグソリティアに「補充」を足した、1人用のパズル。数字も合体もなく、ペグを飛び越えて取っていくだけ。
-上から見たカラフルな2D盤で、ペグをスワイプして遊びます。ビルド不要の静的サイトです。
+上から見た2D盤で、ペグをスワイプして遊びます。ビルド不要の静的サイトです。
+
+見た目は blockmancala（同じ作者のゲーム）に合わせています。青い背景・くぼんだマス・宝石のブロック・丸ボタン・王冠のベストスコア・結果画面は、そこから流用しています。
 
 ## ルール
 
@@ -35,6 +37,7 @@ public/          公開するファイル一式（Cloudflare Pages の出力デ�
   game.js        2D盤の描画とスワイプ操作
   sound.js       効果音（Web Audio で合成）
   favicon.svg
+  fonts/         Nunito と数字の「1」用フォント（SIL Open Font License、fonts/OFL.txt）
   _headers       Cloudflare Pages 用のレスポンスヘッダー
 wrangler.toml    Cloudflare Pages の設定（出力ディレクトリ = public）
 ```
