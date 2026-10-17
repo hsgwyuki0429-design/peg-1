@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>ペグブロック</title>
-  <meta name="description" content="ペグを飛び越えて取っていく、十字盤のパズルゲーム。">
+  <meta name="description" content="玉を飛び越えて取っていく、十字盤のパズルゲーム。">
   <meta name="theme-color" content="#487af0">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,11 +73,6 @@
       </div>
     </div>
 
-    <button id="btn-undo" class="primary undo-btn" type="button">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 4.2 3.2 10l6.3 5.8v-3.6h4.6c2.6 0 4.4 1.6 4.4 4 0 2.2-1.6 3.8-4 3.9v2.8c4-.1 6.8-2.8 6.8-6.7 0-4-3-6.8-7.2-6.8H9.5z" /></svg>
-      <span>戻す</span>
-    </button>
-
     <div class="brand" aria-hidden="true">
       <svg class="brand-logo" viewBox="0 0 32 32"><rect x=".5" y=".5" width="31" height="31" rx="7" fill="#2b4bbf" stroke="#96c0ff" /><path d="M12 5h8v7h7v8h-7v7h-8v-7H5v-8h7z" fill="#ffd23f" /></svg>
       <span class="brand-name">pegblock</span>
@@ -86,31 +81,29 @@
   </div>
 
   <dialog id="dlg-over" class="overlay">
-    <div class="overlay-box">
-      <p class="over-title">動かせるペグがない！</p>
+    <div class="overlay-box" tabindex="-1" autofocus>
+      <p class="over-title">動かせる玉がない！</p>
       <p class="over-label">SCORE</p>
       <p id="r-score" class="over-score">0</p>
       <p class="over-best" id="best-badge" hidden>ベストスコア更新！</p>
       <div class="over-stats">
-        <div class="stat"><span class="stat-label">残りペグ</span><span class="stat-val" id="r-left">0</span></div>
+        <div class="stat"><span class="stat-label">残りの玉</span><span class="stat-val" id="r-left">0</span></div>
         <div class="stat"><span class="stat-label">補充</span><span class="stat-val" id="r-refills">0</span></div>
-        <div class="stat"><span class="stat-label">戻した</span><span class="stat-val" id="r-undos">0</span></div>
       </div>
       <div class="over-actions">
-        <button class="primary" id="over-undo" type="button">1手戻す</button>
         <button class="primary gold" id="over-new" type="button">もう一度</button>
       </div>
     </div>
   </dialog>
 
   <dialog id="dlg-rules" class="overlay">
-    <div class="overlay-box rules-box">
+    <div class="overlay-box rules-box" tabindex="-1" autofocus>
       <p class="over-title">あそびかた</p>
       <ol class="rules">
-        <li>ペグを<b>スワイプ</b>すると、その方向に隣り合うペグを1つ飛び越えて、先の空きマスへ移動します。タップで選んでから移動先をタップしてもOK。</li>
-        <li>飛び越えたペグは盤から消えて<b>1点</b>。斜めには動けません。</li>
-        <li>四方の腕（2×3）のペグが<b>全部なくなる</b>と、その腕の6マスにペグがまるごと補充されます。腕の外の数字は、その腕に残っているペグの数です。中央は補充されません。</li>
-        <li>どのペグも動かせなくなったら終了。「戻す」は何回でも使えます。</li>
+        <li>玉を<b>スワイプ</b>すると、その方向に隣り合う玉を1つ飛び越えて、先の空きマスへ移動します。タップで選んでから移動先をタップしてもOK。</li>
+        <li>飛び越えた玉は盤から取られて<b>1点</b>。斜めには動けません。</li>
+        <li>四方の腕（2×3）の玉が<b>全部なくなる</b>と、その腕の6マスに玉がまるごと補充されます。腕の外の数字は、その腕に残っている玉の数です。中央は補充されません。</li>
+        <li>どの玉も動かせなくなったら終了です。</li>
       </ol>
       <button class="primary gold" id="rules-close" type="button">はじめる</button>
     </div>
