@@ -1,33 +1,29 @@
-// ペグブロックの描画と操作（1 列の盤・スワイプ操作・ステージ制）
+// ペグブロックの描画と操作（上から見た2D盤・スワイプ操作）
 (function () {
   'use strict';
 
-  const P = window.PegLine;
+  const L = window.PegLogic;
   const S = window.Sound;
+  const { SIZE } = L;
 
-  const SAVE_KEY = 'pegblock-stages-v1';
-  const MOVE_MS = 240;
+  const SAVE_KEY = 'pegblock-save-v1';
+  const BEST_KEY = 'pegblock-best';
+  const MOVE_MS = 200;
+  const SPAWN_STAGGER = 45;
   const COMBO_WINDOW = 2500;
 
   const el = (id) => document.getElementById(id);
   const boardEl = el('board');
-  const areaEl = el('area');
 
   // ---------- 状態 ----------
-  let stageIdx = 0;
-  let board = [];
-  let moves = 0;
+  let state = L.newGame();
+  let best = 0;
   let selected = -1;
   let dests = [];
   let lockedUntil = 0;
-  let finished = false;   // クリアか詰みが出て、ダイアログが開いている間
-  let vertical = false;
-  let size = 40;
+  let overShown = false;
   let combo = 0;
   let lastMoveAt = 0;
-  let progress = { cleared: {} };  // ステージの番号 -> 最短手数
-
-  const stage = () => P.STAGES[stageIdx];
 
   // ---------- 保存 ----------
   function storageGet(key) {
@@ -36,119 +32,111 @@
   function storageSet(key, value) {
     try { localStorage.setItem(key, value); } catch (e) { /* 保存できない環境では無視 */ }
   }
-  function loadProgress() {
+  function save() {
+    storageSet(SAVE_KEY, JSON.stringify({ state }));
+  }
+  function load() {
+    best = Number(storageGet(BEST_KEY)) || 0;
     try {
       const data = JSON.parse(storageGet(SAVE_KEY));
-      if (data && data.cleared && typeof data.cleared === 'object') progress = { cleared: data.cleared };
-      if (data && Number.isInteger(data.stageIdx) && P.STAGES[data.stageIdx]) stageIdx = data.stageIdx;
-    } catch (e) { /* 壊れたデータは捨てる */ }
-  }
-  function saveProgress() {
-    storageSet(SAVE_KEY, JSON.stringify({ cleared: progress.cleared, stageIdx }));
+      if (data && data.state && Array.isArray(data.state.board) && data.state.board.length === SIZE * SIZE) {
+        state = L.cloneState(data.state);
+      }
+    } catch (e) { /* 壊れたデータは捨てて新規開始 */ }
   }
 
   // ---------- 盤の組み立て ----------
-  let trackEl = null;
-  const slotEls = [];
-  const tileEls = [];
+  const cellEls = new Array(SIZE * SIZE).fill(null);
+  const tileEls = new Array(SIZE * SIZE).fill(null);
 
-  function colorIndex(v) { return (v - 1) % 9; }
+  for (const i of L.CELLS) {
+    const r = Math.floor(i / SIZE), c = i % SIZE;
+    const d = document.createElement('div');
+    d.className = 'cell';
+    d.dataset.region = L.regionOf(r, c);
+    d.style.setProperty('--r', r);
+    d.style.setProperty('--c', c);
+    boardEl.appendChild(d);
+    cellEls[i] = d;
+  }
 
-  function buildBoard() {
-    boardEl.textContent = '';
-    slotEls.length = 0;
-    tileEls.length = 0;
-    trackEl = document.createElement('div');
-    trackEl.className = 'track';
-    boardEl.appendChild(trackEl);
-    const n = board.length;
-    for (let i = 0; i < n; i++) {
-      const s = document.createElement('div');
-      s.className = 'slot' + (i % 2 ? ' alt' : '');
-      s.dataset.n = i + 1;
-      s.style.setProperty('--i', i);
-      trackEl.appendChild(s);
-      slotEls.push(s);
-    }
-    for (let i = 0; i < n; i++) {
-      tileEls.push(board[i] ? makeTile(i, board[i]) : null);
-    }
+  const colorCache = new Map();
+  function colorOf(v) {
+    if (colorCache.has(v)) return colorCache.get(v);
+    const probe = document.createElement('div');
+    probe.className = 'tile' + (v > 2048 ? ' big' : '');
+    probe.dataset.v = v;
+    probe.style.display = 'none';
+    boardEl.appendChild(probe);
+    const col = getComputedStyle(probe).getPropertyValue('--lo').trim() || '#ff3d77';
+    probe.remove();
+    colorCache.set(v, col);
+    return col;
+  }
+
+  function setTileValue(t, v) {
+    t.dataset.v = v;
+    t.classList.toggle('big', v > 2048);
+    const digits = String(v).length;
+    t.style.setProperty('--k', digits <= 1 ? 0.46 : digits === 2 ? 0.4 : digits === 3 ? 0.31 : 0.24);
+    t.firstChild.textContent = v;
+  }
+
+  function placeTile(t, i) {
+    t.style.setProperty('--r', Math.floor(i / SIZE));
+    t.style.setProperty('--c', i % SIZE);
   }
 
   function makeTile(i, v) {
     const t = document.createElement('div');
     t.className = 'tile';
-    t.dataset.c = colorIndex(v);
-    t.dataset.v = v;
     const face = document.createElement('div');
     face.className = 'face';
     t.appendChild(face);
-    t.style.setProperty('--i', i);
-    trackEl.appendChild(t);
+    setTileValue(t, v);
+    placeTile(t, i);
+    boardEl.appendChild(t);
+    tileEls[i] = t;
     return t;
   }
 
-  // 色の取得（移動先の目印と得点の表示に使う）
-  const colorCache = new Map();
-  function colorOf(v) {
-    const c = colorIndex(v);
-    if (colorCache.has(c)) return colorCache.get(c);
-    const probe = document.createElement('div');
-    probe.className = 'tile';
-    probe.dataset.c = c;
-    probe.style.display = 'none';
-    boardEl.appendChild(probe);
-    const col = getComputedStyle(probe).getPropertyValue('--lo').trim() || '#ff3d77';
-    probe.remove();
-    colorCache.set(c, col);
-    return col;
+  function renderAll() {
+    for (let i = 0; i < tileEls.length; i++) {
+      if (tileEls[i]) { tileEls[i].remove(); tileEls[i] = null; }
+    }
+    boardEl.querySelectorAll('.tile, .popup').forEach((n) => n.remove());
+    for (const i of L.CELLS) if (state.board[i]) makeTile(i, state.board[i]);
   }
 
-  // 画面に合わせて向きと大きさを決める。細い縦長の画面では、盤を縦にして押しやすい大きさにする。
-  function layout() {
-    const n = board.length;
-    const rect = areaEl.getBoundingClientRect();
-    const w = Math.max(100, rect.width - 4), h = Math.max(100, rect.height - 4);
-    const hSize = (w - 16) / n;
-    vertical = h > w && hSize < 38;
-    size = vertical ? Math.min((h - 16) / n, 56, w - 16) : Math.min(hSize, 64);
-    size = Math.max(12, Math.floor(size));
-    boardEl.classList.toggle('v', vertical);
-    boardEl.classList.toggle('h', !vertical);
-    boardEl.classList.toggle('small', size < 26);
-    boardEl.style.setProperty('--size', `${size}px`);
+  function retrigger(t, cls) {
+    t.classList.remove(cls);
+    void t.offsetWidth;
+    t.classList.add(cls);
   }
 
-  function retrigger(node, cls) {
-    node.classList.remove(cls);
-    void node.offsetWidth;
-    node.classList.add(cls);
-  }
-
-  function popup(text, i, color) {
+  function popup(text, r, c, color, wide) {
     const p = document.createElement('div');
-    p.className = 'popup';
+    p.className = 'popup' + (wide ? ' wide' : '');
     p.textContent = text;
+    p.style.setProperty('--r', r);
+    p.style.setProperty('--c', c);
     p.style.setProperty('--col', color);
-    const c = (i + 0.5) * size;
-    p.style.left = vertical ? `${size / 2}px` : `${c}px`;
-    p.style.top = vertical ? `${c}px` : `${size * 0.3}px`;
     p.addEventListener('animationend', () => p.remove());
-    trackEl.appendChild(p);
+    boardEl.appendChild(p);
   }
 
   // ---------- 選択 ----------
   function select(i) {
     if (selected >= 0 && tileEls[selected]) tileEls[selected].classList.remove('selected');
-    for (const m of dests) slotEls[m.to].classList.remove('dest');
+    for (const m of dests) cellEls[m.to].classList.remove('dest');
     selected = i;
-    dests = i >= 0 ? P.movesFrom(board, i) : [];
+    dests = i >= 0 ? L.movesFrom(state.board, i) : [];
     if (i >= 0) {
       tileEls[i].classList.add('selected');
-      const col = colorOf(board[i]);
+      const col = colorOf(state.board[i] * 2);
       for (const m of dests) {
-        slotEls[m.to].classList.add('dest');
-        slotEls[m.to].style.setProperty('--dest', col);
+        cellEls[m.to].classList.add('dest');
+        cellEls[m.to].style.setProperty('--dest', col);
       }
     }
   }
@@ -163,88 +151,94 @@
     const now = performance.now();
     combo = now - lastMoveAt < COMBO_WINDOW ? combo + 1 : 0;
     lastMoveAt = now;
+
     select(-1);
+    const res = L.applyMove(state, move);
+    state = res.state;
 
-    board = P.applyMove(board, move);
-    moves += 1;
-
+    // 飛ぶペグ
     const mover = tileEls[move.from];
-    const victim = tileEls[move.over];
     tileEls[move.from] = null;
-    tileEls[move.over] = null;
     tileEls[move.to] = mover;
-    mover.classList.remove('landed', 'shake');
+    mover.classList.remove('merged', 'shake');
     retrigger(mover, 'moving');
-    mover.style.setProperty('--i', move.to);
-    if (victim) {
-      victim.classList.add('vanish');
-      setTimeout(() => victim.remove(), 240);
-    }
+    placeTile(mover, move.to);
 
-    S.jump(combo);
+    // 飛び越えられたペグ（何個でも）。飛ぶペグが通り過ぎる順に、近いものから消える
+    move.over.forEach((cell, k) => {
+      const victim = tileEls[cell];
+      tileEls[cell] = null;
+      if (!victim) return;
+      setTimeout(() => victim.classList.add('vanish'), k * 45);
+      setTimeout(() => victim.remove(), k * 45 + 220);
+    });
+
+    S.merge(Math.log2(res.merged), combo);
     if (navigator.vibrate && !S.muted) navigator.vibrate(12);
+
+    const tr = Math.floor(move.to / SIZE), tc = move.to % SIZE;
     setTimeout(() => {
       mover.classList.remove('moving');
-      retrigger(mover, 'landed');
-      popup('+1', move.to, colorOf(board[move.to]));
+      setTileValue(mover, res.merged);
+      retrigger(mover, 'merged');
+      popup(`+${res.gained}`, tr, tc, colorOf(res.merged));
     }, MOVE_MS - 30);
 
     lockedUntil = now + MOVE_MS;
-    updateHud(true);
-    setTimeout(checkEnd, MOVE_MS + 200);
-  }
 
-  function checkEnd() {
-    if (finished) return;
-    const st = P.status(board, stage());
-    if (st === 'playing') return;
-    finished = true;
-    if (st === 'cleared') {
-      const prev = progress.cleared[stage().id];
-      const bestNow = prev === undefined ? moves : Math.min(prev, moves);
-      progress.cleared[stage().id] = bestNow;
-      saveProgress();
-      updateHud(false);
-      el('clear-stage').textContent = stage().name;
-      el('c-moves').textContent = moves;
-      el('c-best').textContent = bestNow;
-      el('c-badge').hidden = moves > stage().bestMoves;
-      const hasNext = !!P.STAGES[stageIdx + 1];
-      const next = el('clear-next');
-      next.disabled = !hasNext;
-      next.textContent = hasNext ? '次のステージ' : '次は準備中';
-      S.clear();
-      openDialog(el('dlg-clear'));
-    } else {
-      el('s-left').textContent = P.count(board);
-      S.gameOver();
-      openDialog(el('dlg-stuck'));
+    // 補充：合体のあとにブロックが順に湧いてくる
+    if (res.refilled.length) {
+      lockedUntil = now + MOVE_MS + 80;
+      setTimeout(() => {
+        let k = 0;
+        for (const ref of res.refilled) {
+          for (const i of ref.cells) {
+            if (tileEls[i]) tileEls[i].remove();
+            const t = makeTile(i, ref.value);
+            t.style.setProperty('--delay', `${k++ * SPAWN_STAGGER}ms`);
+            t.classList.add('spawn');
+            t.addEventListener('animationend', () => t.classList.remove('spawn'), { once: true });
+          }
+          const cs = ref.cells.map((i) => [Math.floor(i / SIZE), i % SIZE]);
+          const mr = cs.reduce((a, x) => a + x[0], 0) / cs.length;
+          const mc = cs.reduce((a, x) => a + x[1], 0) / cs.length;
+          popup(`補充 ${ref.value}`, mr, mc, colorOf(ref.value), true);
+        }
+        S.refill(k, SPAWN_STAGGER);
+        updateArms();
+      }, MOVE_MS);
     }
+
+    updateHud(true);
+    save();
+    setTimeout(checkOver, MOVE_MS + 400);
   }
 
   // ---------- 入力 ----------
   let gesture = null;
 
-  function indexFromPoint(x, y) {
-    const rect = trackEl.getBoundingClientRect();
-    const pos = vertical ? y - rect.top : x - rect.left;
-    const i = Math.floor(pos / size);
-    return i >= 0 && i < board.length ? i : -1;
+  function cellFromPoint(x, y) {
+    const rect = boardEl.getBoundingClientRect();
+    const c = Math.floor(((x - rect.left) / rect.width) * SIZE);
+    const r = Math.floor(((y - rect.top) / rect.height) * SIZE);
+    return L.isCell(r, c) ? r * SIZE + c : -1;
   }
 
   function onDown(e) {
     S.unlock();
-    if (finished || performance.now() < lockedUntil) return;
-    gesture = { x: e.clientX, y: e.clientY, idx: indexFromPoint(e.clientX, e.clientY), id: e.pointerId, done: false };
-    try { areaEl.setPointerCapture(e.pointerId); } catch (err) { /* 無視 */ }
+    if (performance.now() < lockedUntil) return;
+    gesture = { x: e.clientX, y: e.clientY, idx: cellFromPoint(e.clientX, e.clientY), id: e.pointerId, done: false };
+    try { boardEl.setPointerCapture(e.pointerId); } catch (err) { /* 無視 */ }
   }
 
   function onMove(e) {
     if (!gesture || gesture.done || e.pointerId !== gesture.id) return;
-    const along = vertical ? e.clientY - gesture.y : e.clientX - gesture.x;
-    if (Math.abs(along) < Math.max(10, size * 0.35)) return;
+    const dx = e.clientX - gesture.x, dy = e.clientY - gesture.y;
+    const threshold = Math.max(14, (boardEl.getBoundingClientRect().width / SIZE) * 0.3);
+    if (Math.hypot(dx, dy) < threshold) return;
     gesture.done = true;
-    swipe(gesture.idx, along > 0 ? 1 : -1);
+    const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+    swipe(gesture.idx, dir);
   }
 
   function onUp(e) {
@@ -255,20 +249,20 @@
   }
 
   function swipe(idx, dir) {
-    if (idx < 0 || !board[idx] || finished || performance.now() < lockedUntil) return;
-    const move = P.movesFrom(board, idx).find((m) => m.to === idx + 2 * dir);
+    if (idx < 0 || !state.board[idx] || performance.now() < lockedUntil) return;
+    const move = L.movesFrom(state.board, idx).find((m) => m.dir === dir);
     if (move) play(move);
     else { select(-1); reject(idx); }
   }
 
   function tap(idx) {
-    if (finished || performance.now() < lockedUntil) return;
+    if (performance.now() < lockedUntil) return;
     if (selected >= 0) {
       const move = dests.find((m) => m.to === idx);
       if (move) { play(move); return; }
     }
-    if (idx < 0 || !board[idx] || idx === selected) { select(-1); return; }
-    if (P.movesFrom(board, idx).length === 0) { select(-1); reject(idx); return; }
+    if (idx < 0 || !state.board[idx] || idx === selected) { select(-1); return; }
+    if (L.movesFrom(state.board, idx).length === 0) { select(-1); reject(idx); return; }
     select(idx);
     S.select();
   }
@@ -283,14 +277,59 @@
     }
   }
 
+  function updateArms() {
+    for (const label of document.querySelectorAll('.arm-label')) {
+      const left = L.ARMS[label.dataset.arm].filter((i) => state.board[i]).length;
+      label.textContent = `あと${left}`;
+      label.classList.toggle('low', left <= 2);
+    }
+  }
+
   function updateHud(bump) {
-    const best = progress.cleared[stage().id];
-    setText('left', P.count(board), bump);
-    setText('moves', moves, false);
-    setText('best', best === undefined ? '-' : best, false);
-    el('stage-name').textContent = stage().name;
-    const goal = stage().goal;
-    el('goal').innerHTML = `ブロックを <b>${goal}個</b> だけ残そう`;
+    setText('score', state.score, bump);
+    setText('best', best, false);
+    setText('moves', state.moves, false);
+    setText('refills', state.refills, bump);
+    const next = L.refillValue(state.board);
+    const chip = el('next-refill');
+    chip.textContent = next;
+    chip.style.background = colorOf(next);
+    updateArms();
+  }
+
+  function resize() {
+    boardEl.style.setProperty('--cell', `${boardEl.getBoundingClientRect().width / SIZE}px`);
+  }
+
+  function checkOver() {
+    if (overShown || L.legalMoves(state.board).length) return;
+    overShown = true;
+    const isBest = state.score > best;
+    if (isBest) {
+      best = state.score;
+      storageSet(BEST_KEY, String(best));
+    }
+    S.gameOver();
+    if (isBest) S.best();
+    el('best-badge').hidden = !isBest;
+    el('r-score').textContent = state.score;
+    el('r-moves').textContent = state.moves;
+    el('r-refills').textContent = state.refills;
+    el('r-max').textContent = state.maxTile;
+    updateHud(false);
+    openDialog(el('dlg-over'));
+  }
+
+  function newGame() {
+    state = L.newGame();
+    combo = 0;
+    overShown = false;
+    lockedUntil = 0;
+    select(-1);
+    renderAll();
+    updateHud(false);
+    save();
+    S.start();
   }
 
   function openDialog(d) {
@@ -302,46 +341,27 @@
     else d.removeAttribute('open');
   }
 
-  function startStage(idx, withSound) {
-    stageIdx = idx;
-    board = P.newBoard(stage());
-    moves = 0;
-    combo = 0;
-    finished = false;
-    selected = -1;
-    dests = [];
-    lockedUntil = 0;
-    saveProgress();
-    buildBoard();
-    layout();
-    updateHud(false);
-    if (withSound) S.start();
-  }
-
   function updateSoundButton() {
-    el('btn-sound').classList.toggle('off', S.muted);
     el('btn-sound').textContent = S.muted ? '🔇' : '🔊';
   }
 
   // ---------- 起動 ----------
-  loadProgress();
-  startStage(stageIdx, false);
+  load();
+  renderAll();
+  updateHud(false);
   updateSoundButton();
-  new ResizeObserver(layout).observe(areaEl);
+  resize();
+  new ResizeObserver(resize).observe(boardEl);
 
-  // 細い盤でも押しやすいよう、盤のまわりの空きも含めた領域全体で受け付ける（盤の長い方向の位置だけで判定する）
-  areaEl.addEventListener('pointerdown', onDown);
-  areaEl.addEventListener('pointermove', onMove);
-  areaEl.addEventListener('pointerup', onUp);
-  areaEl.addEventListener('pointercancel', () => { gesture = null; });
+  boardEl.addEventListener('pointerdown', onDown);
+  boardEl.addEventListener('pointermove', onMove);
+  boardEl.addEventListener('pointerup', onUp);
+  boardEl.addEventListener('pointercancel', () => { gesture = null; });
 
-  el('btn-reset').addEventListener('click', () => startStage(stageIdx, true));
-  el('clear-again').addEventListener('click', () => { closeDialog(el('dlg-clear')); startStage(stageIdx, true); });
-  el('clear-next').addEventListener('click', () => {
-    closeDialog(el('dlg-clear'));
-    if (P.STAGES[stageIdx + 1]) startStage(stageIdx + 1, true);
+  el('btn-new').addEventListener('click', () => {
+    if (state.moves === 0 || overShown || confirm('いまのゲームを終えて、新しく始めますか？')) newGame();
   });
-  el('stuck-again').addEventListener('click', () => { closeDialog(el('dlg-stuck')); startStage(stageIdx, true); });
+  el('over-new').addEventListener('click', () => { closeDialog(el('dlg-over')); newGame(); });
   el('btn-rules').addEventListener('click', () => openDialog(el('dlg-rules')));
   el('rules-close').addEventListener('click', () => { S.unlock(); closeDialog(el('dlg-rules')); });
   el('btn-sound').addEventListener('click', () => {
@@ -351,7 +371,7 @@
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') select(-1);
-    const dir = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[e.key];
+    const dir = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[e.key];
     if (dir && selected >= 0) { e.preventDefault(); S.unlock(); swipe(selected, dir); }
   });
 
@@ -359,18 +379,21 @@
     storageSet(SAVE_KEY + '-seen', '1');
     openDialog(el('dlg-rules'));
   }
+  save();
+  checkOver();
 
   // 自動テスト用（URL に ?debug を付けたときだけ）
   if (/[?&]debug\b/.test(location.search)) {
     window.__test = {
-      info: () => ({ left: P.count(board), moves, finished, vertical, size, stage: stage().id }),
-      // i 番目（0 始まり）のマスの中心（画面座標）と、スワイプの向きの単位ベクトル
-      point: (i) => {
-        const rect = trackEl.getBoundingClientRect();
-        const c = (i + 0.5) * size;
-        return vertical
-          ? { x: rect.left + size / 2, y: rect.top + c, ax: [0, 1], size }
-          : { x: rect.left + c, y: rect.top + size / 2, ax: [1, 0], size };
+      info: () => ({ score: state.score, moves: state.moves, refills: state.refills, maxTile: state.maxTile, pegs: state.board.filter(Boolean).length }),
+      // 合法手を1つ選び、スワイプの始点（画面座標）と方向を返す
+      nextSwipe: () => {
+        const ms = L.legalMoves(state.board);
+        if (!ms.length) return null;
+        const m = ms[Math.floor(Math.random() * ms.length)];
+        const rect = boardEl.getBoundingClientRect();
+        const u = rect.width / SIZE;
+        return { x: rect.left + ((m.from % SIZE) + 0.5) * u, y: rect.top + (Math.floor(m.from / SIZE) + 0.5) * u, dir: m.dir, u, to: m.to, jumped: m.over.length };
       },
     };
   }
