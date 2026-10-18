@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>ペグブロック</title>
-  <meta name="description" content="1列に並んだブロックを飛び越えて、最後の1個まで減らすステージ制パズル。">
+  <meta name="description" content="同じ数字のペグをまとめて飛び越えて合体させる、十字盤のパズルゲーム。">
   <meta name="theme-color" content="#7b2ff7">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,54 +22,55 @@
       </div>
     </header>
 
-    <section class="stage-bar" aria-label="ステージ">
-      <div class="stage-name" id="stage-name">STAGE 1</div>
-      <div class="goal" id="goal">ブロックを <b>1個</b> だけ残そう</div>
-    </section>
-
-    <section class="stats" aria-label="状況">
-      <div class="stat stat-left"><span class="label">残り</span><span class="value" id="left">0</span></div>
+    <section class="stats" aria-label="スコア">
+      <div class="stat stat-score"><span class="label">得点</span><span class="value" id="score">0</span></div>
+      <div class="stat stat-best"><span class="label">ベスト</span><span class="value" id="best">0</span></div>
       <div class="stat stat-moves"><span class="label">手数</span><span class="value" id="moves">0</span></div>
-      <div class="stat stat-best"><span class="label">最短記録</span><span class="value" id="best">-</span></div>
+      <div class="stat stat-refills"><span class="label">補充</span><span class="value" id="refills">0</span></div>
     </section>
 
-    <div class="board-area" id="area">
-      <div class="board" id="board" aria-label="ゲーム盤"></div>
+    <div class="next">
+      次の補充 <span class="chip" id="next-refill">2</span>
+      <span class="next-note">盤上でいちばん小さい数字</span>
+    </div>
+
+    <div class="board-area">
+      <div class="board-frame" id="frame">
+        <div class="board" id="board" aria-label="ゲーム盤"></div>
+        <span class="arm-label" data-arm="top"></span>
+        <span class="arm-label" data-arm="right"></span>
+        <span class="arm-label" data-arm="bottom"></span>
+        <span class="arm-label" data-arm="left"></span>
+      </div>
     </div>
 
     <nav class="controls">
-      <button class="btn btn-new" id="btn-reset" type="button">↻ はじめから</button>
+      <button class="btn btn-new" id="btn-new" type="button">新しいゲーム</button>
     </nav>
   </main>
 
-  <dialog id="dlg-clear" class="dlg">
-    <h2>ステージクリア！</h2>
-    <p class="stage-title" id="clear-stage">STAGE 1</p>
+  <dialog id="dlg-over" class="dlg">
+    <h2>積み！</h2>
+    <p class="best-badge" id="best-badge" hidden>ベスト更新！</p>
     <dl class="result">
-      <div><dt>手数</dt><dd id="c-moves">0</dd></div>
-      <div><dt>最短記録</dt><dd id="c-best">0</dd></div>
+      <div><dt>得点</dt><dd id="r-score">0</dd></div>
+      <div><dt>手数</dt><dd id="r-moves">0</dd></div>
+      <div><dt>補充回数</dt><dd id="r-refills">0</dd></div>
+      <div><dt>最大の数字</dt><dd id="r-max">0</dd></div>
     </dl>
-    <p class="best-badge" id="c-badge" hidden>最短手数！パーフェクト</p>
     <div class="dlg-actions">
-      <button class="btn btn-sub" id="clear-again" type="button">もう一度</button>
-      <button class="btn btn-new" id="clear-next" type="button">次のステージ</button>
-    </div>
-  </dialog>
-
-  <dialog id="dlg-stuck" class="dlg">
-    <h2>動かせない…</h2>
-    <p class="stuck-note">動かせるブロックがなくなりました。残りは <b id="s-left">0</b> 個です。</p>
-    <div class="dlg-actions">
-      <button class="btn btn-new" id="stuck-again" type="button">もう一度</button>
+      <button class="btn btn-new" id="over-new" type="button">もう一度</button>
     </div>
   </dialog>
 
   <dialog id="dlg-rules" class="dlg">
     <h2>あそびかた</h2>
     <ol class="rules">
-      <li>ブロックを<b>スワイプ</b>すると、その方向に隣り合うブロックを1つ飛び越えて、先の空きマスへ移動します。タップで選んでから移動先をタップしてもOK。</li>
-      <li>飛び越えられたブロックは盤から取られます。</li>
-      <li>ブロックを<b>1個だけ</b>残せたらステージクリア。動かせるブロックがなくなったら、はじめからやり直しです。</li>
+      <li>ペグを<b>スワイプ</b>すると、その方向に並んだ<b>同じ数字</b>のペグを<b>何個でも</b>まとめて飛び越えて、その先の空きマスへ移動します。空きマスとの間に同じ数字が何個並んでいてもOK（途中に違う数字があると動けません）。タップで選んでから移動先をタップしてもOK。</li>
+      <li>飛び越えられたペグはすべて消え、動かしたペグは<b>2倍</b>に（何個飛び越えても2倍は1回）。できた数字がそのまま得点です。</li>
+      <li>四方の腕（色つきの2×3）のペグが<b>全部なくなる</b>と、その腕がまるごと補充されます。中央は補充されません。</li>
+      <li>補充される数字は、<b>そのとき盤上にあるいちばん小さい数字</b>。2が無くなれば4、4も無くなれば8…と上がっていきます。</li>
+      <li>どのペグも動かせなくなったら終了です。</li>
     </ol>
     <div class="dlg-actions">
       <button class="btn btn-new" id="rules-close" type="button">はじめる</button>
